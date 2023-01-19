@@ -1,6 +1,31 @@
 from random import randint, choice
 
 
+# База ходов для ИИ
+class AiDb:
+    def __init__(self):
+        self.__board_size = 10
+        self.__priority_objectives = []
+        self.__last_hit = []
+
+    @property
+    def priority_objectives(self):
+        return self.__priority_objectives
+
+    def add_priority_objectives(self, dot):
+        self.__priority_objectives.append(dot)
+
+    def del_priority_objectives_element(self, dot):
+        if self.__priority_objectives:
+            self.__priority_objectives.remove(dot)
+
+    def clear_priority_objectives(self):
+        self.__priority_objectives = []
+
+    def __repr__(self):
+        return f"Priority_objectives({self.__priority_objectives})"
+
+
 class Dot:
     def __init__(self, x, y):
         self.x = x
@@ -135,7 +160,7 @@ class Board:
     # Логика ИИ -> Стреляет наугад. Если ранил корабль, записывает соседние координаты в приоритетный список.
     # Стреляет по координатам из приоритетного списка, вычеркивая их.
     # При убийстве корабля очищает приоритетный список.
-    def shot_for_ai(self, d):
+    def shot_for_ai(self, d, ai_db):
         if self.out(d):
             raise BoardOutException()
 
@@ -199,7 +224,7 @@ class AI:
         self.enemy = enemy
 
     #  Если в приоритетном списке есть точки, берёт их. Если нет, то создаёт случайную.
-    def ask(self):
+    def ask(self, ai_db):
         if ai_db.priority_objectives:
             d = choice(ai_db.priority_objectives)
         else:
@@ -207,39 +232,14 @@ class AI:
         print(f"Ход компьютера: {d.x + 1} {d.y + 1}")
         return d
 
-    def move(self):
+    def move(self, ai_db):
         while True:
             try:
-                target = self.ask()
-                repeat = self.enemy.shot_for_ai(target)
+                target = self.ask(ai_db)
+                repeat = self.enemy.shot_for_ai(target, ai_db)
                 return repeat
             except BoardException as e:
                 print(e)
-
-
-# База ходов для ИИ
-class AiDb:
-    def __init__(self):
-        self.__board_size = 10
-        self.__priority_objectives = []
-        self.__last_hit = []
-
-    @property
-    def priority_objectives(self):
-        return self.__priority_objectives
-
-    def add_priority_objectives(self, dot):
-        self.__priority_objectives.append(dot)
-
-    def del_priority_objectives_element(self, dot):
-        if self.__priority_objectives:
-            self.__priority_objectives.remove(dot)
-
-    def clear_priority_objectives(self):
-        self.__priority_objectives = []
-
-    def __repr__(self):
-        return f"Priority_objectives({self.__priority_objectives})"
 
 
 class User(Player):
@@ -309,6 +309,7 @@ class Game:
 
     def loop(self):
         num = 0
+        ai_db = AiDb()
         while True:
             print("-" * 20)
             print("Доска пользователя:")
@@ -323,18 +324,22 @@ class Game:
             else:
                 print("-" * 20)
                 print("Ходит компьютер!")
-                repeat = self.ai.move()
+                repeat = self.ai.move(ai_db)
             if repeat:
                 num -= 1
 
             if self.ai.board.count == 15:
                 print("-" * 20)
                 print("Пользователь выиграл!")
+                print("Доска компьютера:")
+                print(self.ai.board)
                 break
 
             if self.us.board.count == 15:
                 print("-" * 20)
                 print("Компьютер выиграл!")
+                print("Доска пользователя:")
+                print(self.us.board)
                 break
             num += 1
 
@@ -343,6 +348,5 @@ class Game:
         self.loop()
 
 
-ai_db = AiDb()
 g = Game()
 g.start()
